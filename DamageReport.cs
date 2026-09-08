@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Core.Attributes.Registration;
 using CounterStrikeSharp.API.Modules.Utils;
 
 namespace DamageReport
@@ -15,22 +16,16 @@ namespace DamageReport
 
     public override void Load(bool hotReload)
     {
-      RegisterEventHandler<EventPlayerHurt>(OnPlayerHurt);
-      RegisterEventHandler<EventRoundStart>(OnRoundStart);
-      RegisterEventHandler<EventRoundEnd>(OnRoundEnd);
-
       Log("Plugin loaded! Made with ♡ by FlamesCoder");
     }
 
-    private HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
+    [GameEventHandler]
+    public HookResult OnPlayerHurt(EventPlayerHurt @event, GameEventInfo info)
     {
       var attacker = @event.Attacker;
       var victim = @event.Userid;
 
       if (victim == null || !victim.IsValid)
-        return HookResult.Continue;
-      
-      if (victim.TeamNum < 2)
         return HookResult.Continue;
 
       var victimId = (int)victim.Index;
@@ -91,7 +86,8 @@ namespace DamageReport
       return HookResult.Continue;
     }
 
-    private HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
+    [GameEventHandler]
+    public HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
       playerDamageInfo.Clear();
       playerStates.Clear();
@@ -99,7 +95,8 @@ namespace DamageReport
       return HookResult.Continue;
     }
 
-    private HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
+    [GameEventHandler]
+    public HookResult OnRoundEnd(EventRoundEnd @event, GameEventInfo info)
     {
       ShowDamageInfo();
 
@@ -156,7 +153,7 @@ namespace DamageReport
             $"{ChatColors.Red}From: [{from.DamageHP} / {from.Hits}] " +
             $"{ChatColors.Default}- " +
             $"{ChatColors.ForPlayer(opponent)}{opponent.PlayerName} " +
-            $"{ChatColors.Default}[{hp} hp]";
+            $"{ChatColors.Default}({hp} hp)";
           
           PrintToPlayerChat(player, message);
         }

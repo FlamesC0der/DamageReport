@@ -18,7 +18,7 @@ namespace DamageReport
 
     private void Log(string message)
     {
-      Console.WriteLine("[DamageReport] " + message);
+      Console.WriteLine($"[{ModuleName}] " + message);
     }
   }
 }
