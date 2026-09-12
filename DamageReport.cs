@@ -12,7 +12,7 @@ namespace DamageReport
     public override string ModuleAuthor => "FlamesCoder https://github.com/FlamesC0der";
 
     public Dictionary<int, Dictionary<int, DamagePlayerInfo>> playerDamageInfo = [];
-    private Dictionary<int, PlayerState> playerStates = [];
+    private Dictionary<int, User> _users = [];
 
     public override void Load(bool hotReload)
     {
@@ -32,14 +32,14 @@ namespace DamageReport
       var healthAfter = @event.Health;
 
       // Если хп не было в записях, то создаем новую запись с 100 хп
-      if (!playerStates.TryGetValue(victimId, out var state))
+      if (!_users.TryGetValue(victimId, out var state))
       {
-        state = new PlayerState
+        state = new User
         {
           Health = 100
         };
 
-        playerStates[victimId] = state;
+        _users[victimId] = state;
       }
 
       var healthBefore = state.Health;
@@ -90,7 +90,7 @@ namespace DamageReport
     public HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
     {
       playerDamageInfo.Clear();
-      playerStates.Clear();
+      _users.Clear();
       
       return HookResult.Continue;
     }
@@ -157,16 +157,16 @@ namespace DamageReport
         }
       }
     }
-
-    public class PlayerState
-    {
-      public int Health { get; set; } = 100;
-    }
-
-    public class DamagePlayerInfo
-    {
-      public int DamageHP { get; set; } = 0;
-      public int Hits { get; set; } = 0;
-    }
   }
+}
+
+public class User
+{
+  public int Health { get; set; } = 100;
+}
+
+public class DamagePlayerInfo
+{
+  public int DamageHP { get; set; } = 0;
+  public int Hits { get; set; } = 0;
 }
