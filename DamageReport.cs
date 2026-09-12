@@ -9,7 +9,7 @@ namespace DamageReport
   {
     public override string ModuleName => "DamageReport";
     public override string ModuleVersion => "0.0.1";
-    public override string ModuleAuthor => "FlamesCoder";
+    public override string ModuleAuthor => "FlamesCoder https://github.com/FlamesC0der";
 
     public Dictionary<int, Dictionary<int, DamagePlayerInfo>> playerDamageInfo = [];
     private Dictionary<int, PlayerState> playerStates = [];
@@ -102,8 +102,6 @@ namespace DamageReport
 
       return HookResult.Continue;
     }
-
-    /* Misc functions */
 
     private void ShowDamageInfo()
     {
