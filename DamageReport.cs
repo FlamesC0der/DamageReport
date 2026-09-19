@@ -147,13 +147,14 @@ namespace DamageReport
           var hp = opponent.Pawn.Value?.Health ?? 0;
 
           var message =
+            $"> " +
             $"{ChatColors.Green}To: [{to.DamageHP} / {to.Hits}] " +
             $"{ChatColors.Red}From: [{from.DamageHP} / {from.Hits}] " +
             $"{ChatColors.Default}- " +
             $"{ChatColors.ForPlayer(opponent)}{opponent.PlayerName} " +
             $"{ChatColors.Default}({hp} hp)";
           
-          PrintToPlayerChat(player, message);
+          PrintToPlayerChat(player, message, false);
         }
       }
     }
