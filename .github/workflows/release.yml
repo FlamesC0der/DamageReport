@@ -1,8 +1,21 @@
+# Builds the plugin zip and publishes a GitHub release.
+#
+# How to release a version:
+#   git tag v0.0.1 && git push origin v0.0.1
+#
+# Manually (Actions -> Release -> Run workflow): without a tag it only builds the zip
+# (download it from the run's artifacts); with a tag it also publishes the release.
 name: Release
 
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag, e.g. v0.0.1. Leave empty to only build, without publishing"
+        required: false
+        default: ""
 
 permissions:
   contents: write
@@ -17,25 +30,63 @@ jobs:
         with:
           dotnet-version: 10.0.x
 
+      - name: Resolve version
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_TAG: ${{ github.event.inputs.tag }}
+        run: |
+          set -eu
+          if [ "$EVENT" = push ]; then TAG="$REF_NAME"; else TAG="$INPUT_TAG"; fi
+          if [ -z "$TAG" ]; then
+            echo "No tag given: building only, nothing will be published."
+            echo "tag=" >>"$GITHUB_OUTPUT"
+            echo "version=dev-${GITHUB_SHA::7}" >>"$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$TAG" in
+            v[0-9]*.[0-9]*.[0-9]*) ;;
+            *) echo "::error::tag must look like v0.0.1 (got: $TAG)"; exit 1 ;;
+          esac
+          echo "tag=$TAG" >>"$GITHUB_OUTPUT"
+          echo "version=$TAG" >>"$GITHUB_OUTPUT"
+
       - name: Build
         run: dotnet build -c Release
 
       # The zip mirrors the server layout, so it can be extracted straight into game/csgo/
       - name: Package
         env:
-          TAG: ${{ github.ref_name }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           plugin_dir=dist/addons/counterstrikesharp/plugins
           mkdir -p "$plugin_dir"
           cp -r .build/DamageReport "$plugin_dir/DamageReport"
-          (cd dist && zip -r "../DamageReport-${TAG}.zip" addons)
-          unzip -l "DamageReport-${TAG}.zip"
+          (cd dist && zip -r "../DamageReport-${VERSION}.zip" addons)
+          unzip -l "DamageReport-${VERSION}.zip"
 
-      - name: Create GitHub release
+      # Lets you grab the build from the run page even when nothing is published
+      - uses: actions/upload-artifact@v7
+        with:
+          name: DamageReport-${{ steps.version.outputs.version }}
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub release
+        if: steps.version.outputs.tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          gh release create "$TAG" "DamageReport-${TAG}.zip" \
-            --title "$TAG" \
-            --generate-notes
+          set -eu
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists: uploading the zip to it"
+            gh release upload "$TAG" "DamageReport-${TAG}.zip" --clobber
+          else
+            gh release create "$TAG" "DamageReport-${TAG}.zip" \
+              --title "$TAG" \
+              --generate-notes \
+              --target "$GITHUB_SHA"
+          fi
