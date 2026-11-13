@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Build
+        run: dotnet build -c Release
+
+      # The zip mirrors the server layout, so it can be extracted straight into game/csgo/
+      - name: Package
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          plugin_dir=dist/addons/counterstrikesharp/plugins
+          mkdir -p "$plugin_dir"
+          cp -r .build/DamageReport "$plugin_dir/DamageReport"
+          (cd dist && zip -r "../DamageReport-${TAG}.zip" addons)
+          unzip -l "DamageReport-${TAG}.zip"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" "DamageReport-${TAG}.zip" \
+            --title "$TAG" \
+            --generate-notes
